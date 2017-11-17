@@ -1,0 +1,21 @@
+/**/config
+/**/assets.raw
+/**/.bmx/
+/**/MinGW32/
+*.exe
+*.debug
+*.debug.mt
+*.debug.exe
+*.debug.mt.exe
+*.bak
+
+#ignore binaries in test directory
+#ignore all
+tests/*
+#unignore files with extension
+!tests/*.*
+#unignore subdirectories
+!tests/*/
+#ignore .exe
+tests/*.exe
+
