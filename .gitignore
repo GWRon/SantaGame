@@ -1,13 +1,26 @@
+#ignore all
+*
+#unignore files with extension
+!*.*
+#unignore subdirectories
+!*/
+#ignore .exe
+*.exe
+
+
 /**/config
 /**/assets.raw
 /**/.bmx/
 /**/MinGW32/
+
 *.exe
 *.debug
 *.debug.mt
 *.debug.exe
 *.debug.mt.exe
 *.bak
+
+log.app.txt
 
 #ignore binaries in test directory
 #ignore all
@@ -18,4 +31,6 @@ tests/*
 !tests/*/
 #ignore .exe
 tests/*.exe
+#ignore precompilates
+tests/.bmx/
 
