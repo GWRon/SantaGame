@@ -90,6 +90,7 @@ Type TScreenGameOver extends TScreen
 
 		SetColor 255, 255, 255
 '		GetAssets().mouseCursor.Draw(MouseManager.GetX() - 16, MouseManager.GetY() - 16, 1)
+		DrawOval(MouseManager.GetX()-3, MouseManager.GetY()-3, 6, 6)
 
 		col.SetRGBA()
 	End Method

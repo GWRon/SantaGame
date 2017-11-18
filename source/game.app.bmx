@@ -24,13 +24,13 @@ Type TMyApp Extends TGraphicalApp
 		if GameConfig.screenWidth > 0
 			resolutionX = GameConfig.screenWidth
 		else
-			resolutionX = 320
+			resolutionX = 640
 		endif
 
 		if GameConfig.screenHeight > 0
 			resolutionY = GameConfig.screenHeight
 		else
-			resolutionY = 200
+			resolutionY = 400
 		endif
 		
 
