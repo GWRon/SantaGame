@@ -17,27 +17,27 @@ Type TMyApp Extends TGraphicalApp
 		GameConfig.LoadFromFile("config/settings.xml")
 
 
-		Local gm:TGraphicsManager = TGraphicsManager.GetInstance()
+		Local gm:TGraphicsManager = GetGraphicsManager()
 		gm.SetDesignedResolution(320, 200)
 
-		if GameConfig.fullscreen then gm.SetFullscreen(True)
-		if GameConfig.screenWidth > 0
+		If GameConfig.fullscreen Then gm.SetFullscreen(True)
+		If GameConfig.screenWidth > 0
 			resolutionX = GameConfig.screenWidth
-		else
+		Else
 			resolutionX = 640
-		endif
+		EndIf
 
-		if GameConfig.screenHeight > 0
+		If GameConfig.screenHeight > 0
 			resolutionY = GameConfig.screenHeight
-		else
+		Else
 			resolutionY = 400
-		endif
+		EndIf
 		
 
 		Super.Prepare()
 
 		'try to center the window, for now only Windows
-		CenterAppWindow()
+		GetGraphicsManager().CenterDisplay()
 		'init loop
 		GetDeltatimer().Init(30, -1, 60)
 
@@ -95,22 +95,8 @@ Type TMyApp Extends TGraphicalApp
 	End Method
 
 
-	Function CenterAppWindow()
-		'based on "ccCentreWindowHandle(hWnD%)" from the old blitzmax forums
-		?Win32
-		Local hWnd:int = GetActiveWindow()
-		Local desk:int[4], window:int[4]
-		GetWindowRect(GetDesktopWindow(), desk)
-		GetWindowRect(hWnd, window)
-	
-		SetWindowPos(hWnd, HWND_NOTOPMOST, (desk[2] - (window[2] - window[1])) / 2, (desk[3] - (window[3] - window[0])) / 2, 0, 0, SWP_NOSIZE)	
-		?
-	End Function
-
-
-
 	'override
-	Function __UpdateInput:int()
+	Function __UpdateInput:Int()
 		'needs modified "brl.mod/polledinput.mod" (disabling autopoll)
 		SetAutoPoll(False)
 		KEYMANAGER.Update()
@@ -155,7 +141,7 @@ Type TMyApp Extends TGraphicalApp
 
 	'override
 	Method ShutDown:Int()
-		print "Storing configuration"
+		Print "Storing configuration"
 		GameConfig.SaveToFile("config/settings.xml")
 	End Method
 
