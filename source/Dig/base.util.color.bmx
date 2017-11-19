@@ -40,6 +40,8 @@ Type TColor
 		self.g = g
 		self.b = b
 		self.a = a
+
+		return self
 	End Method
 
 

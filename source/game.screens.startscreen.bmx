@@ -8,6 +8,7 @@ Import "Dig/base.sfx.soundmanager.bmx"
 Import "Dig/base.gfx.gui.button.bmx"
 Import "game.assets.bmx"
 Import "game.gameconfig.bmx"
+Import "game.gamecolors.bmx"
 
 
 
@@ -126,7 +127,7 @@ Type TStartScreen extends TScreen
 			GetAssets().logo.Draw( GetGraphicsManager().GetWidth()/2, GetGraphicsManager().GetHeight()/2, -1, ALIGN_CENTER_CENTER, logoScale)
 		endif
 
-		GetBitmapFont("default", 10).Draw("|color="+GameConfig.baseColorPalette[5].ToRGBString(",")+"|v0.0nothing|/color|", 20, GetGraphicsManager().GetHeight()-40)
+		GetBitmapFont("default", 10).Draw("|color="+GameColorCollection.basePalette[5].ToRGBString(",")+"|v0.0nothing|/color|", 20, GetGraphicsManager().GetHeight()-40)
 		
 		GUIManager.Draw(stateName)
 
