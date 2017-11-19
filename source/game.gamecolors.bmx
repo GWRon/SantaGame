@@ -1,4 +1,5 @@
 SuperStrict
+Import Brl.Map
 Import "Dig/base.util.color.bmx"
 
 
@@ -7,7 +8,9 @@ Type TGameColorCollection
 	Field extendedPalette:TGameColor[]
 	'alternate this on each render
 	global evenFrame:int = 0
-	global similarMode:int = 0
+	global _similarityAlgorithm:int = 0
+	global _rgbLookupCache:TMap = CreateMap()
+	global _rgbLookupCacheCount:int = 0
 	Const SIMILAR_MODE_CIELAB:int = 0
 	Const SIMILAR_MODE_EUCLIDEAN:int = 1
 
@@ -44,43 +47,65 @@ Type TGameColorCollection
 	End Method
 
 
+	Method _ClearRGBLookupCache()
+		_rgbLookupCache.Clear()
+		_rgbLookupCacheCount = 0
+	End Method
+
+
+	Method SetSimilarityAlgorithm:int(newMode:int)
+		_similarityAlgorithm = newMode
+		_ClearRGBLookupCache()
+	End Method
+
+
 	'returns the most similar paletted color for a given rgb one
 	Method FindSimilar:TGameColor(rgbColor:TColor)
+		local cacheKey:string = rgbColor.ToRGBString(",")
+		local result:TGameColor
 		'check CACHE to avoid long calculations
-		'TODO
+		result = TGameColor(_rgbLookupCache.ValueForKey(cacheKey))
 
+		if not result
+			'find most similar color in the palettes
 
-		'find most similar color in the palettes
+			'avoid calculating it over and over 
+			local rgbColorL:float, rgbColorA:float, rgbColorB:float
+			rgbColor.ToLAB(rgbColorL, rgbColorA, rgbColorB)
 
-		'avoid calculating it over and over 
-		local rgbColorL:float, rgbColorA:float, rgbColorB:float
-		rgbColor.ToLAB(rgbColorL, rgbColorA, rgbColorB)
+			local lowestDelta:Float = -1
 
-		local lowestDelta:Float = -1
-		local lowestDeltaColor:TGameColor
+			'loop over all palette colors
+			if _similarityAlgorithm = SIMILAR_MODE_CIELAB
+				for local gColor:TGameColor = EachIn extendedPalette
+					local delta:Float = gColor.GetEffectiveColor().GetCIELABDelta_ByLAB(rgbColorL, rgbColorA, rgbColorB)
+					if lowestDelta < 0 or delta < lowestDelta
+						lowestDelta = delta
+						result = gColor
+					endif
+				next
+			elseif _similarityAlgorithm = SIMILAR_MODE_EUCLIDEAN
+				for local gColor:TGameColor = EachIn extendedPalette
+					local delta:Float = gColor.GetEffectiveColor().GetEuclideanDistance(rgbColor)
 
-		'loop over all palette colors
-		if similarMode = SIMILAR_MODE_CIELAB
-			for local gColor:TGameColor = EachIn extendedPalette
-				local delta:Float = gColor.GetEffectiveColor().GetCIELABDelta_ByLAB(rgbColorL, rgbColorA, rgbColorB)
-				if lowestDelta < 0 or delta < lowestDelta
-					lowestDelta = delta
-					lowestDeltaColor = gColor
-				endif
-			next
-		elseif similarMode = SIMILAR_MODE_EUCLIDEAN
-			for local gColor:TGameColor = EachIn extendedPalette
-				local delta:Float = gColor.GetEffectiveColor().GetEuclideanDistance(rgbColor)
+					if lowestDelta < 0 or delta < lowestDelta
+						lowestDelta = delta
+						result = gColor
+					endif
+				next
+			endif
 
-				if lowestDelta < 0 or delta < lowestDelta
-					lowestDelta = delta
-					lowestDeltaColor = gColor
-				endif
-			next
+			if _rgbLookupCacheCount > 500 then _ClearRGBLookupCache()
+
+			_rgbLookupCache.Insert(cacheKey, result)
+			_rgbLookupCacheCount :+ 1
+			'print "UNCACHED " + rgbColor.ToRGBString(",") + "  -   " + result.baseColor1.ToRGBString(",") +"/"+result.baseColor2.ToRGBString(",")  + " => " + result.GetEffectiveColor().ToRGBString(",") +" = " + lowestDelta
+		'else
+			'print "CACHED " + rgbColor.ToRGBString(",") + "  -   " + result.baseColor1.ToRGBString(",") +"/"+result.baseColor2.ToRGBString(",")  + " => " + result.GetEffectiveColor().ToRGBString(",") 
 		endif
 
-		print rgbColor.ToRGBString(",") + "  -   " + lowestDeltaColor.baseColor1.ToRGBString(",") +"/"+lowestDeltaColor.baseColor2.ToRGBString(",")  + " => " + lowestDeltaColor.GetEffectiveColor().ToRGBString(",") +" = " + lowestDelta 
-		return lowestDeltaColor
+
+		return result
 	End Method
 
 

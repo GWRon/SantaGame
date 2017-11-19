@@ -29,7 +29,7 @@ Repeat
 		gameColor = GameColorCollection.FindSimilar(myColor)
 	endif
 	if KeyHit(KEY_S)
-		GameColorCollection.similarMode = 1 - GameColorCollection.similarMode
+		GameColorCollection.SetSimilarityAlgorithm(1 - GameColorCollection._similarityAlgorithm)
 		gameColor = GameColorCollection.FindSimilar(myColor)
 	endif
 	
@@ -58,7 +58,7 @@ Repeat
 	DrawText("[SPACE] or [LMB] for new color", 10,125)
 	DrawText("[UP] or [MMB] to increase brightness", 10,143)
 	DrawText("[DOWN] or [RMB] to decrease brightness", 10,161)
-	if GameColorCollection.similarMode = TGameColorCollection.SIMILAR_MODE_EUCLIDEAN
+	if GameColorCollection._similarityAlgorithm = TGameColorCollection.SIMILAR_MODE_EUCLIDEAN
 		DrawText("[S] Similar mode: Euclidean -> CIELab", 10,179)
 	else
 		DrawText("[S] Similar mode: CIELab -> Euclidean", 10,179)
