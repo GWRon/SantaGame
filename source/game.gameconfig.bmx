@@ -12,27 +12,6 @@ Type TGameConfig
 	Field screenHeight:int
 	Field renderer:int
 	Field fullscreen:int
-	Field baseColorPalette:TColor[]
-
-
-	Method New()
-		baseColorPalette :+ [New TColor.Create(  0,  0,  0)]
-		baseColorPalette :+ [New TColor.Create(255,255,255)]
-		baseColorPalette :+ [New TColor.Create(136,  0,  0)]
-		baseColorPalette :+ [New TColor.Create(170,255,238)]
-		baseColorPalette :+ [New TColor.Create(204, 68,204)]
-		baseColorPalette :+ [New TColor.Create(  0,204, 85)]
-		baseColorPalette :+ [New TColor.Create(  0,  0,170)]
-		baseColorPalette :+ [New TColor.Create(238,238,119)]
-		baseColorPalette :+ [New TColor.Create(221,136, 85)]
-		baseColorPalette :+ [New TColor.Create(102, 68,  0)]
-		baseColorPalette :+ [New TColor.Create(255,119,119)]
-		baseColorPalette :+ [New TColor.Create( 51, 51, 51)]
-		baseColorPalette :+ [New TColor.Create(119,119,119)]
-		baseColorPalette :+ [New TColor.Create(170,255,102)]
-		baseColorPalette :+ [New TColor.Create(  0,136,255)]
-		baseColorPalette :+ [New TColor.Create(187,187,187)]
-	End Method
 
 
 	Method SaveToFile:TGameConfig(uri:string)
