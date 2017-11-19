@@ -35,7 +35,7 @@ Type TColor
 	End Function
 
 
-	Method InitRGBA:TColor(r:int, g:int, b:int, a:float)
+	Method InitRGBA:TColor(r:int, g:int, b:int, a:float=1.0)
 		self.r = r
 		self.g = g
 		self.b = b
@@ -208,11 +208,27 @@ Type TColor
 
 
 	'returns a delta value describing the perceived distance between colors
+	Method GetCIELABDelta_ByLAB:Float(L:float, A:float, B:float)
+		'default to this implementation
+		return GetCIELABDelta_CIE76_ByLAB(L, A, B)
+	End Method
+
+
+	'returns a delta value describing the perceived distance between colors
 	Method GetCIELABDelta:Float(otherColor:TColor)
 		'default to this implementation
 		return GetCIELABDelta_CIE76(otherColor)
 	End Method
 
+
+	Method GetCIELABDelta_CIE76_ByLAB:Float(L:float, A:float, B:float)
+		local myL:float, myA:float, myB:float
+		ToLAB(myL,myA,myB)
+		
+		'if result is ~2.3 then this is "jnd", just notable difference
+		return sqr( (L - myL)^2 + (A - myA)^2 + (B - myB)^2 )
+	End Method
+	
 
 	Method GetCIELABDelta_CIE76:Float(otherColor:TColor)
 		local L:float, A:float, b:float
