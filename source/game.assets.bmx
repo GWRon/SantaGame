@@ -3,6 +3,7 @@ Import "Dig/base.framework.entity.spriteentity.bmx"
 Import "Dig/base.util.registry.bmx"
 Import "Dig/base.util.registry.spriteloader.bmx"
 Import "Dig/base.util.registry.imageloader.bmx"
+Import "game.gamesprite.bmx"
 'Import "Dig/base.util.registry.bitmapfontloader.bmx"
 'Import "Dig/base.util.registry.soundloader.bmx"
 
@@ -32,6 +33,7 @@ Type TAssets
 		Local registryLoader:TRegistryLoader = New TRegistryLoader
 		'"TRUE" indicates that the content has to get loaded immediately
 		registryLoader.LoadFromXML("config/gui.xml", True)
+		registryLoader.LoadFromXML("config/assets.xml", True)
 
 
 		'=== LOAD INDIVIDUAL CONFIGURED RESOURCES ===

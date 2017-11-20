@@ -8,6 +8,7 @@ Type TGameColorCollection
 	Field extendedPalette:TGameColor[]
 	'alternate this on each render
 	global evenFrame:int = 0
+	global alternatePalettes:int = False
 	global _similarityAlgorithm:int = 0
 	global _rgbLookupCache:TMap = CreateMap()
 	global _rgbLookupCacheCount:int = 0
@@ -20,8 +21,8 @@ Type TGameColorCollection
 		basePalette :+ [New TGameColor.Create(255,255,255)]
 		basePalette :+ [New TGameColor.Create(136,  0,  0)]
 		basePalette :+ [New TGameColor.Create(170,255,238)]
-		basePalette :+ [New TGameColor.Create(204, 68,204)]
-		basePalette :+ [New TGameColor.Create(  0,204, 85)]
+		basePalette :+ [New TGameColor.Create(204, 68,204)] 'on some websites: (112,100,214)
+		basePalette :+ [New TGameColor.Create(  0,204, 85)] 'on some websites: ( 92,160, 53)
 		basePalette :+ [New TGameColor.Create(  0,  0,170)]
 		basePalette :+ [New TGameColor.Create(238,238,119)]
 		basePalette :+ [New TGameColor.Create(221,136, 85)]
@@ -36,14 +37,19 @@ Type TGameColorCollection
 		For local colorIndex1:int = 0 until basePalette.length
 			For local colorIndex2:int = colorIndex1 until basePalette.length
 				local gColor:TGameColor = new TGameColor
-				if colorIndex1 <> colorIndex2
 					gColor.baseColor1 = basePalette[colorIndex1]
+				if colorIndex1 <> colorIndex2
 					gColor.baseColor2 = basePalette[colorIndex2]
 				endif
 				gColor.ActivateColor(1)
 				extendedPalette :+ [gColor]
+				print (extendedPalette.length-1)+":  "  + colorIndex1+","+colorIndex2 + "   " + gColor.GetBaseColor(1).ToRGBString(",") + " / " + gColor.GetBaseColor(2).ToRGBString(",") + " = " + gColor.GetEffectiveColor().ToRGBStrinG(",")
 			Next
 		Next
+
+'		local test:TColor = new TColor.InitRGBA(102,130,133)
+'		local similar:TGameColor = FindSimilar(test)
+'		print similar.GetBaseColor(1).ToRGBString(",") + " / " + similar.GetBaseColor(2).ToRGBString(",") + " = " + similar.GetEffectiveColor().ToRGBStrinG(",")
 	End Method
 
 
@@ -138,8 +144,10 @@ Type TGameColorCollection
 		
 		'inform our colors which base color they should use
 		'for this render period
+		local colorIndex:int = evenFrame + 1
+		if not GameColorCollection.alternatePalettes then colorIndex = 0
 		For local gColor:TGameColor = EachIn extendedPalette
-			gColor.ActivateColor(evenFrame + 1) '1 or 2
+			gColor.ActivateColor(colorIndex)
 		Next
 	End Method
 End Type
@@ -214,6 +222,19 @@ Type TGameColor extends TColor
 	End Method
 
 
+	Method GetBaseColor:TColor(number:int)
+		if number=1
+			if not baseColor1 then return self
+			return baseColor1
+		elseif number=2
+			if not baseColor2 then return self
+			return baseColor2
+		endif
+		
+		return self
+	End Method
+	
+
 	Method GetEffectiveColor:TColor()
 		'only one color defined
 		if not baseColor1 or not baseColor2 then return self
@@ -239,6 +260,12 @@ Type TGameColor extends TColor
 			g = baseColor2.g 
 			b = baseColor2.b 
 			a = baseColor2.a
+		elseif colorNumber = 0
+			local eff:TColor = GetEffectiveColor()
+			r = eff.r
+			g = eff.g 
+			b = eff.b 
+			a = eff.a
 		endif
 	End Method
 End Type

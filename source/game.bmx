@@ -9,6 +9,7 @@ Import "Dig/base.util.interpolation.bmx"
 'Import "external/Render2Texture/renderimage.bmx"
 Import "game.base.bmx"
 Import "game.gamelevel.bmx"
+Import "game.gamelevel.tower.bmx"
 Import "game.gameentity.text.bmx"
 Import "game.gameconfig.bmx"
 Import "game.playerprofile.bmx"
@@ -91,10 +92,17 @@ Type TGame Extends TGameBase
 
 	Function GetLevel:TGameLevel(levelNumber:int)
 		'TODO: generate them via xml or so
-		local gameLevel:TGameLevel = new TGameLevel
-		gameLevel.name = "Level " + levelNumber
-		gameLevel.TimeForLevel = 120
-		'...
+		local gameLevel:TGameLevel
+
+		'TODO
+		'if levelNumber = 1
+			gameLevel = new TGameLevel_Tower
+			gameLevel.name = "Level " + levelNumber
+			gameLevel.TimeForLevel = 120
+		'elseif ...
+		'[...]
+		'endif
+		
 
 		return gameLevel
 	End Function

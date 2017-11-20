@@ -36,6 +36,9 @@ Type TMyApp Extends TGraphicalApp
 
 		Super.Prepare()
 
+		gm.SetVSync(true)
+		gm.SetHertz(0)
+
 		'try to center the window, for now only Windows
 		GetGraphicsManager().CenterDisplay()
 		'init loop
@@ -118,11 +121,24 @@ Type TMyApp Extends TGraphicalApp
 		Super.Update()
 
 
+		If KeyManager.IsHit(KEY_C)
+			if GameColorCollection.alternatePalettes
+				print "disable paletted image alternation"
+				GameColorCollection.alternatePalettes = false
+			else
+				print "enable paletted image alternation"
+				GameColorCollection.alternatePalettes = true
+			endif
+		Endif
+
+
 		GUIManager.EndUpdates()
 	End Method
 
 
 	Method Render:Int()
+		GameColorCollection.Update()
+
 		Super.Render()
 
 		If KeyHit(KEY_F12) Then SaveScreenshot()

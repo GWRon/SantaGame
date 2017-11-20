@@ -1,7 +1,6 @@
 SuperStrict
 Import "Dig/base.framework.graphicalapp.bmx"
 Import "Dig/base.util.registry.bmx"
-Import "Dig/base.util.registry.imageloader.bmx"
 Import "Dig/base.gfx.bitmapfont.bmx"
 Import "Dig/base.sfx.soundmanager.bmx"
 
@@ -38,12 +37,6 @@ Type TScreenInGame extends TScreen
 
 	Method Update:int()
 		GameTime.Update()
-rem
-		If KeyManager.IsDown(KEY_1) and GetGame().currentLevel.GetReceiver(1) Then GetGame().currentLevel.GetReceiver(1).Finish()
-		If KeyManager.IsDown(KEY_2) and GetGame().currentLevel.GetReceiver(2) Then GetGame().currentLevel.GetReceiver(2).Finish()
-		If KeyManager.IsDown(KEY_3) and GetGame().currentLevel.GetReceiver(3) Then GetGame().currentLevel.GetReceiver(3).Finish()
-		If KeyManager.IsDown(KEY_4) and GetGame().currentLevel.GetReceiver(4) Then GetGame().currentLevel.GetReceiver(4).Finish()
-endrem		
 		If KeyManager.IsHit(KEY_ESCAPE)
 			KeyManager.ResetKey(KEY_ESCAPE)
 			KeyManager.BlockKey(KEY_ESCAPE, 150)
@@ -91,6 +84,7 @@ endrem
 		'of fading screens or other modificators
 		local col:TColor = new TColor.Get()
 
+		'=== cursor ===
 		SetColor 255, 255, 255
 		'GetAssets().mouseCursor.Draw(MouseManager.GetX() - 16, MouseManager.GetY() - 16, 1)
 		DrawOval(MouseManager.GetX()-3, MouseManager.GetY()-3, 6, 6)
