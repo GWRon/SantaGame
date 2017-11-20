@@ -43,7 +43,7 @@ Type TGameColorCollection
 				endif
 				gColor.ActivateColor(1)
 				extendedPalette :+ [gColor]
-				print (extendedPalette.length-1)+":  "  + colorIndex1+","+colorIndex2 + "   " + gColor.GetBaseColor(1).ToRGBString(",") + " / " + gColor.GetBaseColor(2).ToRGBString(",") + " = " + gColor.GetEffectiveColor().ToRGBStrinG(",")
+				'print (extendedPalette.length-1)+":  "  + colorIndex1+","+colorIndex2 + "   " + gColor.GetBaseColor(1).ToRGBString(",") + " / " + gColor.GetBaseColor(2).ToRGBString(",") + " = " + gColor.GetEffectiveColor().ToRGBStrinG(",")
 			Next
 		Next
 

@@ -9,11 +9,13 @@ Graphics 640,400,0
 SetVirtualResolution(320,200)
 
 
-local img:TImage = LoadImage("../assets/gfx/entity_player.png", DYNAMICIMAGE)
+'enable palette alternation
+GameColorCollection.alternatePalettes = true
+
+local img:TImage = LoadImage("../assets/gfx/tiles.png", DYNAMICIMAGE)
 local img2:TImage
 local img3:TImage
-CreatePalettedImages(img, img2, img3)
-
+CreatePalettedImageVariants(img, img2, img3)
 
 Repeat
 	Cls

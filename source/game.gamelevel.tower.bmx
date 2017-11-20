@@ -16,7 +16,15 @@ Type TGameLevel_Tower extends TGameLevel
 		'=== demo graphics ==
 		local groundSprite:TSprite = GetSpriteFromRegistry("ground")
 		local wallSprite:TSprite = GetSpriteFromRegistry("wall.frozen")
+		local pathSprite:TSprite = GetSpriteFromRegistry("path.frozen")
+		local path2Sprite:TSprite = GetSpriteFromRegistry("path.halffrozen")
 
+
+		'hidden from tower-paths
+		pathSprite.Draw(0.5 * GetGraphicsManager().GetWidth() - 3 * wallSprite.GetWidth() - pathSprite.GetWidth(), 100 )
+		pathSprite.Draw(0.5 * GetGraphicsManager().GetWidth() - 3 * wallSprite.GetWidth() + 4*pathSprite.GetWidth(), 100 + 4*9 )
+
+		'the tower
 		local wallY:int = GetGraphicsManager().GetHeight() - groundSprite.GetHeight() - wallSprite.GetHeight()
 		For local y:int = 0 to 10
 			local wallX:int = 0.5 * GetGraphicsManager().GetWidth() - 3 * wallSprite.GetWidth()
@@ -26,6 +34,13 @@ Type TGameLevel_Tower extends TGameLevel
 			Next
 			wallY :- wallSprite.GetHeight()
 		Next
+
+		'paths in front of the tower
+		path2Sprite.Draw(0.5 * GetGraphicsManager().GetWidth() - 3 * wallSprite.GetWidth() + 0*pathSprite.GetWidth(), 100 + 1*9 )
+		path2Sprite.Draw(0.5 * GetGraphicsManager().GetWidth() - 3 * wallSprite.GetWidth() + 1*pathSprite.GetWidth(), 100 + 1*9 )
+		pathSprite.Draw(0.5 * GetGraphicsManager().GetWidth() - 3 * wallSprite.GetWidth() + 2*pathSprite.GetWidth(), 100 + 2*9 )
+		pathSprite.Draw(0.5 * GetGraphicsManager().GetWidth() - 3 * wallSprite.GetWidth() + 3*pathSprite.GetWidth(), 100 + 2*9 )
+		pathSprite.Draw(0.5 * GetGraphicsManager().GetWidth() - 3 * wallSprite.GetWidth() + 4*pathSprite.GetWidth(), 100 + 3*9 )
 
 		'draw ground _after_ tower, so a "tower in destruction" can move
 		'downwards without trouble

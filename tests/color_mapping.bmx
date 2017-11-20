@@ -49,6 +49,8 @@ else
 endif
 
 
+'enable palette alternation
+GameColorCollection.alternatePalettes = true
 Repeat
 	Cls
 	GameColorCollection.Update()
