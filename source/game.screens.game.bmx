@@ -84,6 +84,15 @@ endrem
 		'of fading screens or other modificators
 		local col:TColor = new TColor.Get()
 
+		'render the HUD
+		local hudTopBGSprite:TSprite = GetSpriteFromRegistry("hud.top.bg")
+		local hudTopLevelSprite:TSprite = GetSpriteFromRegistry("hud.top.level")
+		local hudTopLivesSprite:TSprite = GetSpriteFromRegistry("hud.top.lives")
+		hudTopBGSprite.TileDrawHorizontal(0, 0, GetGraphicsManager().GetWidth())
+		hudTopLevelSprite.Draw(4,4)
+		local livesWidth:int = 30 'todo: get width of used sprites
+		hudTopLivesSprite.Draw(GetGraphicsManager().GetWidth()-4 - livesWidth,4, -1, ALIGN_RIGHT_TOP) 'start on right
+
 		'=== cursor ===
 		SetColor 255, 255, 255
 		'GetAssets().mouseCursor.Draw(MouseManager.GetX() - 16, MouseManager.GetY() - 16, 1)
