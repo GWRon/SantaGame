@@ -53,7 +53,7 @@ Type TLevel
 	Field starsY:int[64]
 
 	'raise the tower by this
-	Global GROUND_HEIGHT:int = 20
+	Global GROUND_HEIGHT:int = 10
 
 
 	Method New()
@@ -117,7 +117,7 @@ Type TLevel
 
 	'transform local y to renderY
 	Method TransformY:Float(y:Float)
-		return APP_HEIGHT - GROUND_HEIGHT - (y - camera.area.GetY())
+		return APP_HEIGHT - GROUND_HEIGHT - tower.ROW_HEIGHT - (y - camera.area.GetY())
 	End Method
 	
 
@@ -189,6 +189,14 @@ endrem
 		RenderMapTiles(l, tower.WrapCol(c    ), +1)
 		SetColor 0,250,0
 		RenderMapTiles(r, tower.WrapCol(c - 1), -1)
+
+
+		'draw ground _after_ tower, so a "tower in destruction" can move
+		'downwards without trouble
+		SetColor 255,255,255
+		local startOffset:int = camera.area.GetX()
+		local groundSprite:TSprite = GetSpriteFromRegistry("ground")
+		groundSprite.TileDrawHorizontal(-startOffset mod groundSprite.GetWidth(), APP_HEIGHT, APP_WIDTH + groundSprite.GetWidth(), ALIGN_LEFT_BOTTOM)
 	End Method
 
 
@@ -251,7 +259,7 @@ Type TTower extends TEntity
 	Global flatMode:int = false
 	Global debugView:int = False
 
-	Global COL_WIDTH:int = 31 '27
+	Global COL_WIDTH:int = 32 '31 '27
 	Global ROW_HEIGHT:int = 33 '27
 	Global ROW_SURFACE:int = 12 '3
 
@@ -265,7 +273,7 @@ Type TTower extends TEntity
 		'method 1) (define by radius)
 		'COL_WIDTH = ceil(2*pi*radiusInner / cols)
 		'method 2) (define by COL_WIDTH)
-		radiusInner = (cols * COL_WIDTH) / (2*pi)'+ 0.5
+		radiusInner = (cols * COL_WIDTH) / (2*pi) + 0.5
 
 		'radius = GetWidth() / 4
 		'radiusInner = APP_WIDTH / 4
@@ -292,6 +300,7 @@ Type TTower extends TEntity
 	Method WrapCol:Float(col:Float)
 		return TLevel.WrapValue(col, 0, cols)
 	End Method
+
 
 
 	Method X2ScreenX:int(x:float)
@@ -358,14 +367,17 @@ Type TTower extends TEntity
 
 	Method RenderBricks:Int(xOffset:Float = 0, yOffset:Float = 0, alignment:TVec2D = Null)
 		'offset tiles/bricks every odd/even row
-		local offsets:Float[] = [0.0, 0.5]
+'		local offsets:Float[] = [0.0, 0.30, 0.6, 1.2]
+		local offsets:Float[] = [0.0]
 		local offset:int = 0
-	
+
 		for local row:int = 0 until rows
 			local rowY:int = level.TransformY( row * ROW_HEIGHT)
 			'visible?
-			if MathHelper.inInclusiveRange(rowY, -ROW_HEIGHT, APP_HEIGHT + ROW_HEIGHT)
+			if MathHelper.inInclusiveRange(rowY, -ROW_HEIGHT, APP_HEIGHT - level.GROUND_HEIGHT)
 				RenderBrickRow(rowY, offsets[offset], xOffset, yOffset)
+				
+				GetBitmapFont().Draw(row, 180, rowY)
 			endif
 			offset = (offset + 1) mod offsets.length
 		Next
@@ -552,6 +564,8 @@ endrem
 			endif
 
 			x = level.X2ScreenX(x) + radiusInner + 0.5
+
+'if y=114 then print "col"+col+"  x=" + x +"   angle:" + level.WrapValue(int(angle), 0, TOWER_ANGLES-1)
 			if angle = 90
 				effWidth = 0
 			elseif angle = 0
@@ -583,8 +597,19 @@ endrem
 
 
 		'check for too big gaps
-rem
+'rem
 		local totalWidth:int = 2*radiusInner
+		local reachedWidth:int = 0
+		For local col:int = mostLeft until cols + mostLeft
+			local colIndex:int = col mod cols
+			if not visible[colIndex] then continue
+			reachedWidth :+ widths[colIndex]
+		Next
+		
+		startXs[mostLeft] = 0
+
+		local addWidth:int = max(0,(totalWidth - reachedWidth))
+		local widthAccumulator:Float = 0.0
 		for local col:int = mostLeft until cols + mostLeft
 			local colIndex:int = col mod cols
 			if not visible[colIndex] then continue
@@ -593,16 +618,30 @@ rem
 			'nothing adjustable coming
 			if not visible[nextColIndex] then continue
 
-			startXs[nextColIndex] = startXs[colIndex] + widths[colIndex] 
+			'increase width
+			widthAccumulator :+ widths[colIndex] / float(totalWidth) * addWidth
+			if widthAccumulator >= 1.0
+				widths[colIndex] :+ 1
+				widthAccumulator :- 1
+			endif
+
+
+			startXs[nextColIndex] = startXs[colIndex] + widths[colIndex]
+
+			'limit width
+'			if startXs[nextColIndex] + widths[nextColIndex] > radiusInner
+'				widths[nextColIndex] = 2*radiusInner - startXs[nextColIndex]
+'			endif
 		next
-endrem
+'endrem
 
 		local lastX2:int
 		for local col:int = 0 until cols
 			if not visible[col] then continue
 			
-			if debugView
-				SetColor 0,0,0
+			if debugView 'or 1 = 1
+'				SetColor 0,0,0
+				SetColor 0,(col mod 2)*150,(1-(col mod 2))*150
 				DrawRect(GetScreenX() + startXs[col], y, widths[col], ROW_HEIGHT)
 				SetColor 255,150,0
 				DrawRect(GetScreenX() + startXs[col]+1, y+1, Max(1,widths[col]-2), ROW_HEIGHT-2)
@@ -697,7 +736,7 @@ endif
 
 	Method Render:Int(xOffset:Float = 0, yOffset:Float = 0, alignment:TVec2D = Null)
 		local top:int = Max(0, level.TransformY(GetHeight()))
-		local bottom:int = Min(APP_HEIGHT, level.TransformY(0))
+		local bottom:int = Min(APP_HEIGHT, level.TransformY(0) + level.tower.ROW_HEIGHT)
 
 		local vpX:int, vpY:int, vpH:int, vpW:int
 		GetViewport(vpX, vpY, vpH, vpW)
@@ -706,7 +745,7 @@ endif
 
 		'render background
 		SetColor 0,0,0
-		DrawRect(GetScreenX() + 1, top, radiusInner*2 - 2, bottom - top)
+		DrawRect(GetScreenX(), top, radiusInner*2, bottom - top)
 		SetColor 255,255,255
 
 		RenderBricks(xOffset, yOffset, alignment)
@@ -719,17 +758,28 @@ End Type
 
 
 Type TPlayer extends TEntity
+	Field automove:int = True
 
 	Method Update:int()
 		local dx:Float = 0
 		local dy:Float = 0
-		If KeyDown(key_left) Then
-			dx = -40
-		End If
-		
-		If KeyDown(key_right) Then
-			dx = +40
-		End If
+
+		automove = False
+		if KeyDown(KEY_LALT) then automove = true
+
+		if automove
+			dx = -60
+		else
+			If KeyDown(key_left) Then
+				dx = -40
+			End If
+			
+			If KeyDown(key_right) Then
+				dx = +40
+			End If
+		endif
+
+		if Keyhit(KEY_SPACE) then area.position.x :- 1
 
 '		If KeyHit(key_left) Then area.position.x :-1
 '		If KeyHit(key_right) Then area.position.x :+1
