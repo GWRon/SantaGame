@@ -12,6 +12,11 @@ SetVirtualResolution(320,200)
 local myColor:TColor = new TColor.InitRGBA(93, 161, 221)
 local gameColor:TGameColor = GameColorCollection.FindSimilar(myColor)
 
+'tests
+gameColor.baseColor1 = new TColor.InitRGBA(220,220,220)
+gameColor.baseColor2 = new TColor.InitRGBA(255,255,255)
+
+GameColorCollection.alternatePalettes = true
 Repeat
 	Cls
 	GameColorCollection.Update()

@@ -315,6 +315,26 @@ Type TRenderableEntity extends TEntityBase
 	End Method
 
 
+	Method GetX:Float()
+		return area.GetX()
+	End Method
+
+
+	Method GetY:Float()
+		return area.GetY()
+	End Method
+
+
+	Method GetWidth:Float()
+		return area.GetW()
+	End Method
+
+
+	Method GetHeight:Float()
+		return area.GetH()
+	End Method
+
+
 	Method GetBoundingBox:TRectangle()
 		return GetScreenArea()
 	End Method

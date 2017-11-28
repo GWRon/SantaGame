@@ -89,9 +89,9 @@ endrem
 		local hudTopLevelSprite:TSprite = GetSpriteFromRegistry("hud.top.level")
 		local hudTopLivesSprite:TSprite = GetSpriteFromRegistry("hud.top.lives")
 		hudTopBGSprite.TileDrawHorizontal(0, 0, GetGraphicsManager().GetWidth())
-		hudTopLevelSprite.Draw(4,4)
+		hudTopLevelSprite.Draw(4,5)
 		local livesWidth:int = 30 'todo: get width of used sprites
-		hudTopLivesSprite.Draw(GetGraphicsManager().GetWidth()-4 - livesWidth,4, -1, ALIGN_RIGHT_TOP) 'start on right
+		hudTopLivesSprite.Draw(GetGraphicsManager().GetWidth()-4 - livesWidth,5, -1, ALIGN_RIGHT_TOP) 'start on right
 
 		'=== cursor ===
 		SetColor 255, 255, 255

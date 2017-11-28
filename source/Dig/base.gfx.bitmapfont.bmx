@@ -58,6 +58,7 @@ Type TBitmapFontManager
 	Field List:TList = CreateList()
 	Global systemFont:TBitmapFont
 	Global _instance:TBitmapFontManager
+	Global _defaultFlags:int = SMOOTHFONT
 
 
 	Function GetInstance:TBitmapFontManager()
@@ -78,14 +79,13 @@ Type TBitmapFontManager
 	End Method
 
 
-	Method Get:TBitmapFont(name:String, size:Int=-1, style:Int=-1)
+	Method Get:TBitmapFont(name:String="", size:Int=-1, style:Int=-1)
 		name = lower(name)
 		'fall back to default font if none was given
 		if name = "" then name = "default"
-		style :| SMOOTHFONT
+		style :| _defaultFlags
 
 		Local defaultFont:TBitmapFont = GetDefaultFont()
-
 		'no details given: return default font
 		If name = "default" And size = -1 And style = -1 Then Return defaultFont
 		'no size given: use default font size
@@ -113,7 +113,7 @@ Type TBitmapFontManager
 
 	Method Add:TBitmapFont(name:String, file:String, size:Int, style:Int=0)
 		name = lower(name)
-		style :| SMOOTHFONT
+		style :| _defaultFlags
 
 		local defaultFont:TBitmapFont = GetDefaultFont()
 		If size = -1 Then size = defaultFont.FSize
@@ -140,7 +140,7 @@ End Function
 '===== CONVENIENCE ACCESSORS =====
 'not really needed - but for convenience to avoid direct call to the
 'instance getter GetBitmapFontManager()
-Function GetBitmapFont:TBitmapfont(name:string, size:Int=-1, style:Int=-1)
+Function GetBitmapFont:TBitmapfont(name:string="", size:Int=-1, style:Int=-1)
 	Return TBitmapFontManager.GetInstance().Get(name, size, style)
 End Function
 
@@ -424,12 +424,21 @@ Type TBitmapFont
 			charsSprites[charKey] = new TSprite.Init(spriteSet, charKey, rect, null, 0)
 		Next
 		'set image to sprite pack
-		spriteSet.image = LoadImage(pix)
+		if IsSmooth()
+			spriteSet.image = LoadImage(pix)
+		else
+			'non smooth fonts should disable any filtering (eg. in virtual resolution scaling)
+			spriteSet.image = LoadImage(pix, 0)
+		endif
 	End Method
 
 
 	Method IsBold:Int()
 		return (FStyle & BOLDFONT)
+	End Method
+
+	Method IsSmooth:Int()
+		return (FStyle & SMOOTHFONT)
 	End Method
 
 
