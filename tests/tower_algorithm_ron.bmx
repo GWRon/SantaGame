@@ -37,6 +37,14 @@ registryLoader.LoadFromXML("config/assets.xml", True)
 
 
 Global level:TLevel = New TLevel
+Global elf:TTowerEntity = New TTowerEntity
+elf.sprite = GetSpriteFromRegistry("elf.idle")
+elf.SetPosition(-1*level.tower.COL_WIDTH +10, 9 * level.tower.ROW_HEIGHT)
+
+Global santa:TTowerEntity = New TTowerEntity
+santa.sprite = GetSpriteFromRegistry("santa.idle")
+santa.SetPosition(2*level.tower.COL_WIDTH +10, 5 * level.tower.ROW_HEIGHT)
+
 
 Const APP_WIDTH:Int = 320
 Const APP_HEIGHT:Int = 200
@@ -83,6 +91,13 @@ Type TLevel
 	Field starsX:Int[64]
 	Field starsY:Int[64]
 
+	'precalculated values for current tower position
+	Field _precalculatedEffColWidths:int[18]
+	Field _precalculatedTileScreenX:int[18]
+	Field _precalculatedTowerScreenX:int[18]
+	Field _precalculatedColAngles:int[18]
+	Field _precalculatedForPosition:int = -1 
+
 	'raise the tower by this
 	Global GROUND_HEIGHT:Int = 10
 
@@ -122,11 +137,11 @@ Type TLevel
 	End Function
 
 
-	Function WrapValue:Float(v:Float, vMin:Float, vMav:Float)
+	Function WrapValue:Float(v:Float, vMin:Float, vMax:Float)
 		If v < vMin
-			Return vMav - (vMin - v) Mod (vMav - vMin)
+			Return vMax - (vMin - v) Mod (vMax - vMin)
 		Else
-			Return vMin + (v - vMin) Mod (vMav - vMin)
+			Return vMin + (v - vMin) Mod (vMax - vMin)
 		EndIf
 	End Function
 
@@ -169,7 +184,92 @@ Type TLevel
 	Method TransformY:Float(y:Float)
 		Return APP_HEIGHT - GROUND_HEIGHT - tower.ROW_HEIGHT - (y - camera.area.GetY())
 	End Method
-	
+
+
+	Method X2Angle:int(x:int, radius:int = -1)
+		return WrapValue(tower.X2Angle(x - level.camera.area.GetX()), -180, 180)
+	End Method
+
+
+	Method IsBackSide:int(angle:int)
+		return angle <= -90 Or angle >= 90
+	End Method
+
+
+	Method IsFrontSide:int(angle:int)
+		return not IsBackSide(angle)
+	End Method
+
+
+	Method IsLeftSide:int(angle:int)
+		return (angle < 0 And angle >= -180)
+	End Method
+
+
+	Method IsRightSide:int(angle:int)
+		return not IsLeftSide(angle)
+	End Method
+
+
+	Method GetCol:int(x:int)
+		return x / tower.COL_WIDTH
+	End Method
+
+
+	Method GetRow:int(y:int)
+		return y / tower.ROW_HEIGHT
+	End Method
+
+
+	'untested
+	Method ScreenY2Y:int(y:int)
+		return (APP_HEIGHT - GROUND_HEIGHT - tower.ROW_HEIGHT - y + camera.area.GetY()) / tower.ROW_HEIGHT
+	End Method
+
+
+	Method GetColAngle:int(col:int, centerOfCol:int = True)
+		'return angle of the center of the column if desired
+		if centerOfCol
+			return X2Angle(col * tower.COL_WIDTH + 0.5 * tower.COL_WIDTH)
+		else
+			return X2Angle(col * tower.COL_WIDTH)
+		endif
+	End Method
+
+
+	Method PrecalculateForPosition:int(position:int)
+		if _precalculatedForPosition = position then return False
+
+
+		For local col:int = 0 to _precalculatedTileScreenX.length-1
+			_precalculatedTileScreenX[col] = level.X2ScreenX(col * tower.COL_WIDTH, tower.radiusOuter) + tower.radiusInner + 0.5
+			_precalculatedTowerScreenX[col] = level.X2ScreenX(col * tower.COL_WIDTH, tower.radiusInner) + tower.radiusInner + 0.5
+		Next
+
+		_precalculatedForPosition = position
+
+		return True
+	End Method
+
+
+	Method GetCurrentPosition:int()
+		return camera.GetX() * 10 '*10 for floating point 
+	End Method
+
+
+	Method GetTileScreenX:int(col:int)
+		PrecalculateForPosition( GetCurrentPosition() )
+		return _precalculatedTileScreenX[ WrapValue(col, 0, _precalculatedTileScreenX.length)]
+		'return level.X2ScreenX(col * tower.COL_WIDTH, tower.radiusOuter) + tower.radiusInner + 0.5
+	End Method
+
+
+	Method GetTowerScreenX:int(col:int)
+		PrecalculateForPosition( GetCurrentPosition() )
+		return _precalculatedTowerScreenX[ WrapValue(col, 0, _precalculatedTowerScreenX.length)]
+		'return level.X2ScreenX(col * tower.COL_WIDTH, tower.radiusInner) + tower.radiusInner + 0.5
+	End Method
+
 
 	Method RenderMapTiles(colMin:Int, colMax:Int, direction:Int, limitSide:Int = 0)
 		Local rowMin:Int = Max(0, tower.Y2Row(camera.area.GetY() - GROUND_HEIGHT) - 1)
@@ -178,14 +278,16 @@ Type TLevel
 		Local col:Int = colMin
 
 		While col <> colMax
-			For Local row:Int = rowMin To rowMax
+			'from top to bottom (to hide "shadows")
+			For Local row:Int = rowMax To rowMin step -1
 				Local y:Int = TransformY(row * tower.ROW_HEIGHT)
 
 				Local tileType:Int = tower.GetTile(col, row)
 				If tileType = TTower.TILETYPE_PATH
 					Local colX:Int = col * tower.COL_WIDTH
-					Local x:Int = level.X2ScreenX(colX, tower.radiusOuter) + tower.radiusInner + 0.5
-					Local xTower:Int = level.X2ScreenX(colX, tower.radiusInner) + tower.radiusInner + 0.5
+					Local x:Int = GetTileScreenX(col)
+					Local xTowerBrick:Int = GetTowerScreenX(col)
+					Local xNextTowerBrick:Int = GetTowerScreenX(col+1)
 					Local xNext:Int
 					Local effWidth:Int
 					Local effTowerWidth:Int
@@ -194,50 +296,43 @@ Type TLevel
 						effWidth = tower.COL_WIDTH
 						
 					Else
-						xNext = level.X2ScreenX(colX + tower.COL_WIDTH, tower.radiusOuter) + tower.radiusInner + 0.5
+						xNext = GetTileScreenX(col + 1)
 						'first next approach: using the x and xNext is required (+0.5)
 						'and a "level.X2ScreenX(colX + COL_WIDTH) - level.X2ScreenX(colX)"
 						'is not working properly! (jitters) 
 						effWidth = Abs(xNext - x)
-						effTowerWidth = Abs(level.X2ScreenX(colX + tower.COL_WIDTH, tower.radiusInner) + tower.radiusInner + 0.5 - xTower)
+						effTowerWidth = Abs( xNextTowerBrick - xTowerBrick)
 						'angle based approach
 						'effWidth:int = floor(cos(abs(angle)) * COL_WIDTH)
 					EndIf
 
-					Local angle:Int = level.WrapValue( tower.X2Angle(colX + 0.5 * tower.COL_WIDTH) - tower.X2Angle(level.camera.area.GetX()), -180, 180)
-					Local backSide:Int = angle <= -90 Or angle >= 90
-					Local rightSide:Int = angle > 0
+					Local angle:Int = GetColAngle(col)
 
 					'limit to back or front side?
-					if limitSide = -1 and not backSide then continue
-					if limitSide = +1 and backSide then continue
+					if limitSide = -1 and not IsBackSide(angle) then continue
+					if limitSide = +1 and IsBackSide(angle) then continue
 					
-'	if not tower.flatMode and not MathHelper.inInclusiveRange(angle, -90, 90) then continue
-
 					'brick side only visible on front
 					'(backside shows only front side until it is hidden totally)
-					If Not backside And effWidth > 0
+					If Not IsBackSide(angle) And effWidth > 0
 						GetSpriteFromRegistry("path."+((col Mod 3) +1)).DrawResized(New TRectangle.Init(tower.GetScreenX() + x, y, effWidth, 10))
 						'render shadow on the tower!
-						GetSpriteFromRegistry("path.shadow."+((col Mod 3) +1)).DrawResized(New TRectangle.Init(tower.GetScreenX() + xTower, y+10, effTowerWidth, 5))
+						GetSpriteFromRegistry("path.shadow."+((col Mod 3) +1)).DrawResized(New TRectangle.Init(tower.GetScreenX() + xTowerBrick, y+10, effTowerWidth, 5))
 					EndIf	
 					'show a front of the path?
 					'-> front is from "radius Inner" to "radius Outer"-point
 					If Not tower.flatMode
-						Local xNextWall:Int = level.X2ScreenX(colX + tower.COL_WIDTH, tower.radiusInner) + tower.radiusInner + 0.5
-						Local xPreviousWall:Int = level.X2ScreenX(colX - tower.COL_WIDTH, tower.radiusInner) + tower.radiusInner + 0.5
-						Local xWall:Int = level.X2ScreenX(colX, tower.radiusInner) + tower.radiusInner + 0.5
-						Local angleStart:Int = level.WrapValue( tower.X2Angle(colX) - tower.X2Angle(level.camera.area.GetX()), -180, 180)
-						Local angleNext:Int = level.WrapValue( tower.X2Angle(colX + tower.COL_WIDTH) - tower.X2Angle(level.camera.area.GetX()), -180, 180)
-						Local anglePrevious:Int = level.WrapValue( tower.X2Angle(colX - tower.COL_WIDTH) - tower.X2Angle(level.camera.area.GetX()), -180, 180)
+						Local xPreviousWall:Int = GetTowerScreenX(col-1)
+						Local angleStart:Int = GetColAngle(col, False)
+						Local angleNext:Int = GetColAngle(col + 1, False)
+						Local anglePrevious:Int = GetColAngle(col -1, False)
 
 
-						If angle < 0 And angle >= -180
+						If not IsRightSide(angle)
 							If angleNext < -2
-								Local xNextWall:Int = level.X2ScreenX(colX + tower.COL_WIDTH, tower.radiusInner) + tower.radiusInner + 0.5
-								frontWidth = xNextWall - xNext
+								frontWidth = xNextTowerBrick - xNext
 								If frontWidth > 0
-									If backSide
+									If IsBackSide(angle)
 										'clip to not draw on the tower
 										Local clipRect:TRectangle = New TRectangle.Init(tower.GetScreenX() - tower.PLATFORM_WIDTH, y, tower.PLATFORM_WIDTH, 10)
 										GetSpriteFromRegistry("path.front.left").DrawResized(New TRectangle.Init(tower.GetScreenX() + x, y, frontWidth, 10), Null, -1, False, clipRect)
@@ -249,14 +344,14 @@ Type TLevel
 						Else
 							If angleStart > 2
 								'Local xPrevious:Int = level.X2ScreenX(colX - tower.COL_WIDTH, tower.radiusOuter) + tower.radiusInner + 0.5
-								frontWidth =  x - xWall
+								frontWidth =  x - xTowerBrick
 								GetSpriteFromRegistry("path.front.right").DrawResized(New TRectangle.Init(tower.GetScreenX() + x - Abs(frontWidth), y, Abs(frontWidth), 10))
 								'DrawOval(tower.GetScreenX() + x -2, y-2, 4,4)
 								'DrawOval(tower.GetScreenX() + xWall -2, y-4, 4,4)
 							EndIf
 						EndIf
-'						GetBitmapFont().Draw(angle, tower.GetScreenX() + x -11, y +2 )
-'						GetBitmapFont().Draw(backside, tower.GetScreenX() + x - 18, y +2 )
+						'GetBitmapFont().Draw(angle, tower.GetScreenX() + x -11, y +2 )
+						'GetBitmapFont().Draw(backside, tower.GetScreenX() + x - 18, y +2 )
 					EndIf
 					
 				
@@ -318,11 +413,15 @@ endrem
 		Local startY:Int = WrapValue(APP_HEIGHT * camera.GetY()/Float(tower.GetHeight()), 0, APP_HEIGHT)
 		Local negativeX:Int = APP_WIDTH - startX 
 		Local negativeY:Int = APP_HEIGHT - startY
-		SetColor 255,255,255
 		For Local i:Int = 0 Until 64
+			if i mod 2 = 0
+				SetColor 218,212,94
+			else
+				SetColor 222,238,214
+			endif
 			'wrap around rotating axis
 			Local starX:Int = WrapValue(startX + starsX[i], 0, APP_WIDTH)
-			DrawRect(starX, startY + starsY[i], 1,1)
+			Plot(starX, startY + starsY[i])
 		Next
 	End Method
 
@@ -337,7 +436,8 @@ endrem
 		RenderMapTiles(tower.WrapCol(l - 1), tower.WrapCol(l + 1), +1, -1)
 		RenderMapTiles(tower.WrapCol(r + 2), tower.WrapCol(r - 1), -1, -1)
 
-'		RenderMapTiles(15,0, -1)
+		if elf.IsOnBackSide() then elf.Render(tower.GetScreenX(), 0)
+		if santa.IsOnBackSide() then santa.Render(tower.GetScreenX(), 0)
 	End Method
 
 
@@ -351,12 +451,18 @@ endrem
 		RenderMapTiles(r, tower.WrapCol(c - 1), -1, +1)
 
 
+		if not elf.IsOnBackSide() then elf.Render(tower.GetScreenX(), 0)
+
 		'draw ground _after_ tower, so a "tower in destruction" can move
 		'downwards without trouble
 		SetColor 255,255,255
 		Local startOffset:Int = camera.area.GetX()
 		Local groundSprite:TSprite = GetSpriteFromRegistry("ground")
 		groundSprite.TileDrawHorizontal(-startOffset Mod groundSprite.GetWidth(), APP_HEIGHT, APP_WIDTH + groundSprite.GetWidth(), ALIGN_LEFT_BOTTOM)
+
+		'player: it is drawn before the ground - as he might be able to
+		'walk on it
+		if not santa.IsOnBackSide() then santa.Render(tower.GetScreenX(), 0)
 	End Method
 
 
@@ -420,7 +526,7 @@ Type TTower Extends TEntity
 	Global debugView:Int = False
 
 	Global COL_WIDTH:Int = 32 '31 '27
-	Global ROW_HEIGHT:Int = 33 '27
+	Global ROW_HEIGHT:Int = 11 '33 '27
 	Global ROW_SURFACE:Int = 12 '3
 	Global PLATFORM_WIDTH:Int = 0
 
@@ -438,21 +544,28 @@ Type TTower Extends TEntity
 		SetFlatMode(False)
 
 		Local map:String
-		map :+ "xxx  xxxxx  xxxxxx~n"
-		map :+ "        xx  xxxxxx~n"
-		map :+ "xxx  xxxxx  xxxxxx~n"
-		map :+ "xxx  xxxxx  xxxxxx~n"
-		map :+ "xxx  xxxxx  xxxxxx~n"
-		map :+ "        xx  xxxxxx~n"
-		map :+ "        xx  xxxxxx~n"
-		map :+ "        xx  xxxxxx~n"
-		map :+ "xxx  xxxxx  xxxxxx~n"
-		map :+ "xxx  xxxxx  xxxxxx~n"
-		map :+ "xxx  xxxxx  xxxxxx~n"
-		map :+ "xxx  xxxxx  xxxxxx~n"
-		map :+ "    xx   x        ~n"
-		map :+ "  xx    x         ~n"
-		map :+ "xx     x     xx   "
+		map :+ "      x           ~n"
+		map :+ "     x            ~n"
+		map :+ "    x             ~n"
+		map :+ "x  x              ~n"
+		map :+ " xx         xxxxxx~n"
+		map :+ "          xx      ~n"
+		map :+ "       xxx        ~n"
+		map :+ "x     x        xxx~n"
+		map :+ " x   x        x   ~n"
+		map :+ "  xxx        x    ~n"
+		map :+ "          xxx     ~n"
+		map :+ "         x        ~n"
+		map :+ "       xx      xxx~n"
+		map :+ "      x       x   ~n"
+		map :+ "    xx       x    ~n"
+		map :+ "   x      xxx     ~n"
+		map :+ "xxx      x        ~n"
+		map :+ "        x         ~n"
+		map :+ "      xx          ~n"
+		map :+ "    xx      xxx   ~n"
+		map :+ "  xx      xx      ~n"
+		map :+ "xx       x        "
 
 		InitTilesFromString(map)
 		
@@ -554,9 +667,9 @@ Type TTower Extends TEntity
 
 
 	'convert x coord to angle (360 = one time around the tower)
-	Method X2Angle:Float(x:Float, radius:Int = -1)
-		If radius = -1 Then radius = area.GetW()/2
-		Return 360.0 * (WrapX(x) / (2*radius))
+	Method X2Angle:Int(x:Float, radius:Int = -1)
+		If radius = -1 Then radius = area.GetW()/2 ' radius = radiusInner
+		Return 360 * (WrapX(x) / (2*radius))
 	End Method
 
 
@@ -591,6 +704,9 @@ Type TTower Extends TEntity
 		Local offset:Int = 0
 
 		For Local row:Int = 0 Until rows
+			'ever 3rd
+			if row mod 3 <> 1 then continue
+			 
 			Local rowY:Int = level.TransformY( row * ROW_HEIGHT)
 			'visible?
 			If MathHelper.inInclusiveRange(rowY, -ROW_HEIGHT, APP_HEIGHT - level.GROUND_HEIGHT)
@@ -628,11 +744,11 @@ Type TTower Extends TEntity
 			If effWidth <= 0 Then Continue
 
 			Local angle:Int = level.WrapValue( X2Angle(colX + 0.5 * COL_WIDTH) - X2Angle(level.camera.area.GetX()), -180, 180)
-			If Not flatMode And Not MathHelper.inInclusiveRange(angle, -90, 90) Then Continue
+'			If Not flatMode And Not MathHelper.inInclusiveRange(angle, -90, 90) Then Continue
 
-			GetSpriteFromRegistry("wall."+((col Mod 3) +1)).DrawResized(New TRectangle.Init(GetScreenX() + x, y, effWidth, ROW_HEIGHT))
+			GetSpriteFromRegistry("wall."+((col Mod 3) +1)).DrawResized(New TRectangle.Init(GetScreenX() + x, y, effWidth, 3*ROW_HEIGHT))
 			'DrawOval(GetScreenX() + x-5, 130, 10, 10)
-			'GetBitmapFont().Draw(x, GetScreenX() + x + 5, y + 5)
+			'GetBitmapFont().Draw(angle, GetScreenX() + x + 5, y + 5)
 		Next
 	End Method
 
@@ -848,6 +964,57 @@ endrem
     End Method
 End Type
 
+
+
+Type TTowerEntity Extends TEntity
+	Field sprite:TSprite
+
+
+	Method X2ScreenX:int()
+		return level.X2ScreenX(area.GetX(), level.tower.radiusOuter) + level.tower.radiusInner + 0.5
+	End Method
+
+
+	Method Y2ScreenY:int()
+		return level.TransformY(area.GetY())
+	End Method
+	
+
+	Method IsOnBackSide:int()
+		return level.IsBackSide( X2Angle() )
+	End Method
+
+
+	Method IsOnRightSide:int()
+		return level.IsRightSide( X2Angle() )
+	End Method
+
+
+	Method X2Angle:int()
+		return level.X2Angle(area.GetX())
+	End Method
+
+
+	Method GetCol:int()
+		return level.GetCol(area.GetX())
+	End Method
+
+
+	Method GetRow:int()
+		return level.GetRow(area.GetY())
+	End Method
+	
+
+	Method Render:Int(xOffset:Float = 0, yOffset:Float = 0, alignment:TVec2D = Null)
+		'need to offset when the col is scaled down a bit (eg. on left/right side)
+		local x:int = xOffset + X2ScreenX()
+		if not level.tower.flatMode
+'			if level.GetColAngle(GetCol()
+		endif
+		sprite.Draw(x, Y2ScreenY(), -1, ALIGN_LEFT_BOTTOM) 'feets at y
+		'GetBitmapFont().Draw(GetCol()+","+GetRow(), xOffset + X2ScreenX() + 15, yOffset + Y2ScreenY() - 10)
+	End Method
+End Type
 
 
 
