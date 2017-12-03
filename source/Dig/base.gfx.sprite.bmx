@@ -844,6 +844,18 @@ Type TSprite
 		if clipRect
 			'check if render area is outside of clipping area
 			If not clipRect.Intersects(targetCopy) then return
+
+
+			'limit viewport to intersection of current VP and clipping area
+			local vpx:int, vpy:int, vpw:int, vph:int
+			GetGraphicsManager().GetViewPort(vpx, vpy, vpw, vph)
+			local vpRect:TRectangle = New TRectangle.Init(vpx, vpy, vpw, vph)
+			local intersectingVP:TRectangle = vpRect.Copy().Intersect(clipRect)
+			GetGraphicsManager().SetViewPort(int(intersectingVP.GetX()), int(intersectingVP.GetY()), int(intersectingVP.GetW()), int(intersectingVP.GetH()))
+				DrawSubImageRect(parent.GetImage(), Float(floor(targetCopy.GetX())), Float(floor(targetCopy.GetY())), Float(ceil(targetCopy.GetW())), Float(ceil(targetCopy.GetH())), Float(area.GetX() + sourceCopy.GetX()), Float(area.GetY() + sourceCopy.GetY()), sourceCopy.GetW(), sourceCopy.GetH())
+			GetGraphicsManager().SetViewPort(vpx, vpy, vpw, vph)
+
+			
 rem
 'unfinished- calculations not free of bugs...
 			'Clip left and top
@@ -867,7 +879,7 @@ rem
 				floor(targetCopy.GetX() + clipL), floor(targetCopy.GetY() + clipT), ceil(targetCopy.GetW() - clipR - clipL), ceil(targetCopy.GetH() - clipB - clipT), ..
 				area.GetX() + sourceCopy.GetX() + clipL*(1.0-scaleX), area.GetY() + sourceCopy.GetY() + (clipT/targetcopy.GetH())*scaleY, sourceCopy.GetW()*scaleX, sourceCopy.GetH()*scaleY)
 endrem
-			DrawSubImageRect(parent.GetImage(), Float(floor(targetCopy.GetX())), Float(floor(targetCopy.GetY())), Float(ceil(targetCopy.GetW())), Float(ceil(targetCopy.GetH())), Float(area.GetX() + sourceCopy.GetX()), Float(area.GetY() + sourceCopy.GetY()), sourceCopy.GetW(), sourceCopy.GetH())
+'			DrawSubImageRect(parent.GetImage(), Float(floor(targetCopy.GetX())), Float(floor(targetCopy.GetY())), Float(ceil(targetCopy.GetW())), Float(ceil(targetCopy.GetH())), Float(area.GetX() + sourceCopy.GetX()), Float(area.GetY() + sourceCopy.GetY()), sourceCopy.GetW(), sourceCopy.GetH())
 		else
 			DrawSubImageRect(parent.GetImage(), Float(floor(targetCopy.GetX())), Float(floor(targetCopy.GetY())), Float(ceil(targetCopy.GetW())), Float(ceil(targetCopy.GetH())), Float(area.GetX() + sourceCopy.GetX()), Float(area.GetY() + sourceCopy.GetY()), sourceCopy.GetW(), sourceCopy.GetH())
 
