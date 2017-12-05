@@ -212,6 +212,14 @@ Type TRenderableEntity extends TEntityBase
 	End Method
 
 
+	Method HasChild:int(child:TRenderableEntity)
+		for local c:TRenderableEntity = EachIn childEntities
+			if child = c then return True
+		next
+		return False
+	End Method
+
+
 	Method AddChild(child:TRenderableEntity, childOffset:TVec2D = null, index:int = -1)
 		if not child then return
 		if not childEntities then childEntities = new TRenderableEntity[0]
