@@ -865,6 +865,19 @@ endrem
 		Local rowMax:Int = Min(rows - 1, rowMin + (APP_HEIGHT / ROW_HEIGHT + 1))
 		Local cell:Int
 		Local col:Int = colMin
+
+		While col <> colMax
+			'from top to bottom (to hide "shadows")
+			For Local row:Int = rowMin To rowMax
+				Local tile:TTowerTile = GetTile(col, row)
+				If Not tile Then Continue
+				tile.RenderPathEntityShadows(xOffset, yOffset)
+			Next
+			col = WrapCol(col + direction)
+		Wend
+		col = colMin
+
+
 		While col <> colMax
 			'from top to bottom (to hide "shadows")
 			For Local row:Int = rowMin To rowMax
@@ -980,6 +993,14 @@ endrem
 
 		'render bricks/background - the "tower"
 		RenderBackground(xOffset, yOffset, alignment)
+
+		'render entities not belonging to a tile
+		If unhandledEntities.Count() > 0
+			For Local pathEntity:TTowerPathEntity = EachIn entities
+				pathEntity.RenderShadow(xOffset, yOffset)
+			Next
+		EndIf
+
 
 		RenderFrontTiles(xOffset, yOffset)
 
@@ -1163,6 +1184,13 @@ Type TTowerTile Extends TTowerEntity
 		Super.Update()
 		area.SetX( level.GetColX(col) )
 		area.SetY( level.GetRowY(row) )
+	End Method
+
+
+	Method RenderPathEntityShadows:Int(xOffset:Float = 0, yOffset:Float = 0, alignment:TVec2D = Null)
+		For Local pathEntity:TTowerPathEntity = EachIn pathEntities
+			pathEntity.RenderShadow(xOffset, yOffset, alignment)
+		Next
 	End Method
 
 
@@ -1751,6 +1779,10 @@ print "light jump"
 
 		Return True
 	End Method
+
+	Method RenderShadow:Int(xOffset:Float = 0, yOffset:Float = 0, alignment:TVec2D = Null)
+		'nothing
+	End Method
 End Type
 
 
@@ -1910,11 +1942,20 @@ Type TPlayer Extends TTowerPathEntity
 	End Method
 
 
+	Method RenderShadow:Int(xOffset:Float = 0, yOffset:Float = 0, alignment:TVec2D = Null)
+		Local x:Int = 162 'int(xOffset + GetScreenX() + 0.5)
+		SetColor 0,0,0
+'		if HasMovement(MOVEMENT_JUMPING)
+			sprite.Draw(x+2, yOffset + GetTopY()+2)
+'		else
+'			sprite.DrawClipped(New TRectangle.Init(x+2, yOffset + GetTopY()+2, sprite.GetWidth()-2, sprite.GetHeight()-2))
+'		endif
+	End Method
+	
+
 	Method Render:Int(xOffset:Float = 0, yOffset:Float = 0, alignment:TVec2D = Null)
 '		Super.Render(xOffset, yOffset, alignment)
 		Local x:Int = 162 'int(xOffset + GetScreenX() + 0.5)
-		SetColor 0,0,0
-		sprite.DrawClipped(New TRectangle.Init(x+2, yOffset + GetTopY()+2, sprite.GetWidth()-2, sprite.GetHeight()-2))
 		SetColor 255,255,255
 		sprite.Draw(x, yOffset + GetTopY(), -1, ALIGN_LEFT_TOP)
 
