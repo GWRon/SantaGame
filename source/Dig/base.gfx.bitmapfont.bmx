@@ -207,6 +207,9 @@ Type TBitmapFont
 'DISABLECACHE	global ImageCaches:TMap = CreateMap()
 	global eventRegistered:int = 0
 
+	global shadowColor:TColor = new TColor.clBlack
+	global embossColor:TColor = new TColor.clWhite
+
 	Const STYLE_NONE:int = 0
 	Const STYLE_EMBOSS:int = 1
 	Const STYLE_SHADOW:int = 2
@@ -829,7 +832,7 @@ Type TBitmapFont
 			if doDraw
 				SetAlpha float(special * 0.5 * oldColor.a)
 				fontStyle.ignoreColorTag :+ 1
-				__draw(text, x, y+1, TColor.clWhite, doDraw, fontStyle)
+				__draw(text, x, y+1, embossColor, doDraw, fontStyle)
 				fontStyle.ignoreColorTag :- 1
 			endif
 		'shadow
@@ -839,14 +842,14 @@ Type TBitmapFont
 			if doDraw
 				SetAlpha special*0.5*oldColor.a
 				fontStyle.ignoreColorTag :+ 1
-				__draw(text, x+1,y+1, TColor.clBlack, doDraw, fontStyle)
+				__draw(text, x+1,y+1, shadowColor, doDraw, fontStyle)
 				fontStyle.ignoreColorTag :- 1
 			endif
 		'glow
 		else if style = STYLE_GLOW
 			if doDraw
 				fontStyle.ignoreColorTag :+ 1
-				SetColor 0,0,0
+				shadowColor.SetRGB()
 				SetAlpha special*0.25*oldColor.a
 				__draw(text, x-2,y, ,doDraw, fontStyle)
 				__draw(text, x+2,y, ,doDraw, fontStyle)

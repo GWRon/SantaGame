@@ -1,0 +1,8 @@
+/**/.bmx/
+/**/.wrp/
+/**/MinGW32/
+*.exe
+*.debug
+*.debug.exe
+*.bak
+

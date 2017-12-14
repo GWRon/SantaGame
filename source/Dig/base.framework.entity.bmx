@@ -317,9 +317,9 @@ Type TRenderableEntity extends TEntityBase
 
 
 	'returns whether two (Render)Entities overlap eachother visually
-	Method Overlaps:int(other:TRenderableEntity)
+	Method OverlapsVisually:int(other:TRenderableEntity)
 		if not other then return False
-		return GetBoundingBox().intersects(other.GetBoundingBox())
+		return GetScreenBoundingBox().intersects(other.GetScreenBoundingBox())
 	End Method
 
 
@@ -344,6 +344,11 @@ Type TRenderableEntity extends TEntityBase
 
 
 	Method GetBoundingBox:TRectangle()
+		return area
+	End Method
+
+
+	Method GetScreenBoundingBox:TRectangle()
 		return GetScreenArea()
 	End Method
 
