@@ -8,7 +8,7 @@ Type TGameColorCollection
 	Field extendedPalette:TGameColor[]
 	'alternate this on each render
 	global evenFrame:int = 0
-	global alternatePalettes:int = False
+	global alternatePalettes:int = True
 	global _similarityAlgorithm:int = 0
 	global _rgbLookupCache:TMap = CreateMap()
 	global _rgbLookupCacheCount:int = 0
@@ -65,9 +65,13 @@ Type TGameColorCollection
 	End Method
 
 
-	'returns the most similar paletted color for a given rgb one
 	Method FindSimilar:TGameColor(rgbColor:TColor)
-		local cacheKey:string = rgbColor.ToRGBString(",")
+		return FindSimilarRGB(rgbColor.r, rgbColor.g, rgbColor.b, rgbColor)
+	End Method
+
+	'returns the most similar paletted color for a given rgb one
+	Method FindSimilarRGB:TGameColor(r:int, g:int, b:int, rgbColor:TColor = null)
+		local cacheKey:string = r+","+g+","+b 'rgbColor.ToRGBString(",")
 		local result:TGameColor
 		'check CACHE to avoid long calculations
 		result = TGameColor(_rgbLookupCache.ValueForKey(cacheKey))
@@ -75,30 +79,56 @@ Type TGameColorCollection
 		if not result
 			'find most similar color in the palettes
 
-			'avoid calculating it over and over 
+			'avoid calculating it over and over
 			local rgbColorL:float, rgbColorA:float, rgbColorB:float
+			if not rgbColor then rgbColor = new TColor.Create(r, g, b)
 			rgbColor.ToLAB(rgbColorL, rgbColorA, rgbColorB)
 
 			local lowestDelta:Float = -1
 
 			'loop over all palette colors
 			if _similarityAlgorithm = SIMILAR_MODE_CIELAB
-				for local gColor:TGameColor = EachIn extendedPalette
+				'prefer base palette
+				for local gColor:TGameColor = EachIn basePalette
 					local delta:Float = gColor.GetEffectiveColor().GetCIELABDelta_ByLAB(rgbColorL, rgbColorA, rgbColorB)
 					if lowestDelta < 0 or delta < lowestDelta
 						lowestDelta = delta
 						result = gColor
+						if lowestDelta = 0 then exit
 					endif
 				next
+
+				if lowestDelta > 0
+					for local gColor:TGameColor = EachIn extendedPalette
+						local delta:Float = gColor.GetEffectiveColor().GetCIELABDelta_ByLAB(rgbColorL, rgbColorA, rgbColorB)
+						if lowestDelta < 0 or delta < lowestDelta
+							lowestDelta = delta
+							result = gColor
+							if lowestDelta = 0 then exit
+						endif
+					next
+				endif
 			elseif _similarityAlgorithm = SIMILAR_MODE_EUCLIDEAN
-				for local gColor:TGameColor = EachIn extendedPalette
+				for local gColor:TGameColor = EachIn basePalette
 					local delta:Float = gColor.GetEffectiveColor().GetEuclideanDistance(rgbColor)
 
 					if lowestDelta < 0 or delta < lowestDelta
 						lowestDelta = delta
 						result = gColor
+						if lowestDelta = 0 then exit
 					endif
 				next
+				if lowestDelta > 0
+					for local gColor:TGameColor = EachIn extendedPalette
+						local delta:Float = gColor.GetEffectiveColor().GetEuclideanDistance(rgbColor)
+
+						if lowestDelta < 0 or delta < lowestDelta
+							lowestDelta = delta
+							result = gColor
+							if lowestDelta = 0 then exit
+						endif
+					next
+				endif
 			endif
 
 			if _rgbLookupCacheCount > 500 then _ClearRGBLookupCache()
@@ -107,7 +137,7 @@ Type TGameColorCollection
 			_rgbLookupCacheCount :+ 1
 			'print "UNCACHED " + rgbColor.ToRGBString(",") + "  -   " + result.baseColor1.ToRGBString(",") +"/"+result.baseColor2.ToRGBString(",")  + " => " + result.GetEffectiveColor().ToRGBString(",") +" = " + lowestDelta
 		'else
-			'print "CACHED " + rgbColor.ToRGBString(",") + "  -   " + result.baseColor1.ToRGBString(",") +"/"+result.baseColor2.ToRGBString(",")  + " => " + result.GetEffectiveColor().ToRGBString(",") 
+			'print "CACHED " + rgbColor.ToRGBString(",") + "  -   " + result.baseColor1.ToRGBString(",") +"/"+result.baseColor2.ToRGBString(",")  + " => " + result.GetEffectiveColor().ToRGBString(",")
 		endif
 
 
@@ -134,14 +164,14 @@ Type TGameColorCollection
 
 		local gColor:TGameColor = new TGameColor
 		MakeSimilar(gColor, rgbColor)
-		
+
 		return gColor
 	End Method
 
 
 	Method Update:int()
 		evenFrame = 1 - evenFrame
-		
+
 		'inform our colors which base color they should use
 		'for this render period
 		local colorIndex:int = evenFrame + 1
@@ -180,7 +210,7 @@ Type TGameColor extends TColor
 		col.InitRGBA(grey, grey, grey, a)
 		return col
 	End Function
-	
+
 
 	'override
 	Method Copy:TGameColor()
@@ -189,6 +219,7 @@ Type TGameColor extends TColor
 		if baseColor1 then copyColor.baseColor1 = baseColor1.Copy()
 		if baseColor2 then copyColor.baseColor2 = baseColor2.Copy()
 		if effectiveColor then copyColor.effectiveColor = effectiveColor.Copy()
+		return copyColor
 	End Method
 
 
@@ -230,10 +261,10 @@ Type TGameColor extends TColor
 			if not baseColor2 then return self
 			return baseColor2
 		endif
-		
+
 		return self
 	End Method
-	
+
 
 	Method GetEffectiveColor:TColor()
 		'only one color defined
@@ -241,30 +272,30 @@ Type TGameColor extends TColor
 
 		'cache result if not done yet
 		if not effectiveColor
-			effectiveColor = new TColor.InitRGBA(0.5*(baseColor1.r+baseColor2.r), 0.5*(baseColor1.g+baseColor2.g), 0.5*(baseColor1.b+baseColor2.b), 1.0)
+			effectiveColor = new TColor.InitRGBA(int(0.5*(baseColor1.r+baseColor2.r)), int(0.5*(baseColor1.g+baseColor2.g)), int(0.5*(baseColor1.b+baseColor2.b)), 1.0)
 		endif
 		return effectiveColor
 	End Method
-	
+
 
 	Method ActivateColor(colorNumber:int)
 		if not baseColor1 then return
-		
+
 		if colorNumber = 1 or not baseColor2
 			r = baseColor1.r
 			g = baseColor1.g
 			b = baseColor1.b
 			a = baseColor1.a
 		elseif colorNumber = 2
-			r = baseColor2.r 
-			g = baseColor2.g 
-			b = baseColor2.b 
+			r = baseColor2.r
+			g = baseColor2.g
+			b = baseColor2.b
 			a = baseColor2.a
 		elseif colorNumber = 0
 			local eff:TColor = GetEffectiveColor()
 			r = eff.r
-			g = eff.g 
-			b = eff.b 
+			g = eff.g
+			b = eff.b
 			a = eff.a
 		endif
 	End Method
